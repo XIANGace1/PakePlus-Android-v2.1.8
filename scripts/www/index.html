@@ -2,238 +2,252 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 关键：移动端适配 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>简易记账本</title>
+    <title>极简记账本</title>
     <style>
+        /* 全局样式重置+基础配置 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "微软雅黑", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        :root {
+            /* 高级配色体系 */
+            --primary: #4080ff;
+            --primary-light: #e8f0ff;
+            --success: #52c41a;
+            --danger: #ff4d4f;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --bg-main: #f9fafb;
+            --bg-card: #ffffff;
+            --border-light: #e5e7eb;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --transition: all 0.2s ease;
         }
         body {
-            background-color: #f5f5f5;
-            padding: 10px;
+            background-color: var(--bg-main);
+            padding: 16px;
+            min-height: 100vh;
         }
+        /* 核心容器 */
         .container {
-            max-width: 500px;
+            max-width: 480px;
             margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
         }
-        h1 {
+        /* 顶部时间栏 */
+        .time-header {
             text-align: center;
-            color: #333;
-            font-size: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
-        /* 切换按钮样式 */
-        .tab-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+        .current-date {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
         }
-        .tab-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #e9ecef;
-            color: #495057;
+        .current-month {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-main);
         }
-        .tab-btn.active {
-            background-color: #007bff;
-            color: white;
-        }
-        .tab-btn:hover:not(.active) {
-            background-color: #dee2e6;
-        }
-
-        .section {
-            margin-bottom: 20px;
-        }
+        /* 区域标题 */
         .section-title {
             font-size: 16px;
-            font-weight: bold;
-            color: #444;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #eee;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        /* 表单控件 */
+        .form-group {
+            margin-bottom: 16px;
         }
         select, input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
+            padding: 12px 14px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            color: var(--text-main);
+            background-color: var(--bg-main);
+            transition: var(--transition);
         }
-        button {
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+        select::placeholder, input::placeholder {
+            color: var(--text-tertiary);
+        }
+        /* 按钮样式 */
+        .btn {
             width: 100%;
-            padding: 12px;
-            background-color: #007bff;
-            color: white;
+            padding: 14px;
             border: none;
-            border-radius: 6px;
+            border-radius: var(--radius-sm);
             font-size: 16px;
+            font-weight: 500;
             cursor: pointer;
-            margin-bottom: 10px;
+            transition: var(--transition);
+            margin-bottom: 12px;
         }
-        button:hover {
-            background-color: #0056b3;
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #3370e7;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #ff3838;
+            box-shadow: var(--shadow-sm);
+        }
+        /* 数据展示区 */
+        .data-card {
+            background-color: var(--bg-main);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-top: 8px;
         }
         .data-item {
-            font-size: 14px;
-            line-height: 1.8;
-            color: #555;
+            font-size: 15px;
+            line-height: 2;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border-light);
         }
-        .balance-text {
-            color: #28a745; /* 结余用绿色突出 */
-            font-weight: bold;
+        .data-item:last-child {
+            border-bottom: none;
         }
-        #chart-container, #year-chart-container {
-            width: 100%;
-            height: 250px;
-            margin-top: 10px;
+        .data-label {
+            color: var(--text-secondary);
         }
-        .tip {
-            color: #999;
-            font-size: 12px;
-            text-align: center;
-            margin-top: 5px;
+        .data-value {
+            font-weight: 500;
         }
-        .reset-btn {
-            background-color: #dc3545;
+        .balance-value {
+            color: var(--success);
+            font-weight: 600;
         }
-        .reset-btn:hover {
-            background-color: #c82333;
-        }
-        .year-btn {
-            background-color: #28a745;
-        }
-        .year-btn:hover {
-            background-color: #218838;
-        }
-        /* 隐藏区域的样式 */
-        .content-area {
+        /* 隐藏音频元素 */
+        .sound-element {
             display: none;
         }
-        .content-area.active {
-            display: block;
+        /* 响应式微调 */
+        @media (max-width: 375px) {
+            .container {
+                padding: 18px;
+            }
+            .current-month {
+                font-size: 20px;
+            }
         }
     </style>
-    <!-- 引入Chart.js（CDN方式，无需本地下载） -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>简易记账本</h1>
+        <!-- 隐藏的音频元素（成功提示音） -->
+        <audio class="sound-element" id="success-sound" preload="auto">
+            <!-- 轻量的成功提示音CDN资源，时长0.3秒，无版权 -->
+            <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
+        </audio>
 
-        <!-- 新增：账单类型切换按钮 -->
-        <div class="tab-buttons">
-            <button class="tab-btn active" onclick="switchTab('month')">月度账单</button>
-            <button class="tab-btn" onclick="switchTab('year')">年度账单</button>
+        <!-- 顶部时间栏（自动识别当前时间） -->
+        <div class="time-header">
+            <div class="current-date" id="current-date">2026年03月03日 星期二</div>
+            <div class="current-month">当前月份：<span id="current-month-text">3月</span></div>
         </div>
 
-        <!-- 月度账单区域（默认显示） -->
-        <div id="month-area" class="content-area active">
-            <!-- 1. 月份选择区域（自动选中当前月） -->
-            <div class="section">
-                <div class="section-title">选择月份</div>
-                <select id="month-select">
-                    <option value="">请选择月份</option>
-                    <option value="1">1月</option>
-                    <option value="2">2月</option>
-                    <option value="3">3月</option>
-                    <option value="4">4月</option>
-                    <option value="5">5月</option>
-                    <option value="6">6月</option>
-                    <option value="7">7月</option>
-                    <option value="8">8月</option>
-                    <option value="9">9月</option>
-                    <option value="10">10月</option>
-                    <option value="11">11月</option>
-                    <option value="12">12月</option>
-                </select>
-            </div>
-
-            <!-- 2. 逐笔收支录入区域 -->
-            <div class="section">
-                <div class="section-title">逐笔记录收支</div>
-                <select id="record-type">
-                    <option value="">请选择记录类型</option>
-                    <option value="income">收入</option>
-                    <option value="work">工作支出</option>
-                    <option value="traffic">交通支出</option>
-                    <option value="entertainment">吃喝玩乐支出</option>
-                </select>
-                <input type="number" id="amount-input" placeholder="本次金额（元）" step="0.01" min="0">
-                <button onclick="addRecord()">添加记录</button>
-                <button class="reset-btn" onclick="resetMonthData()">清空当月数据</button>
-            </div>
-
-            <!-- 3. 月度数据展示区域 -->
-            <div class="section">
-                <div class="section-title">当月收支明细</div>
-                <div class="data-item" id="income-text">当月收入：¥0.00</div>
-                <div class="data-item" id="total-cost-text">当月总支出：¥0.00</div>
-                <div class="data-item balance-text" id="month-balance-text">当月结余：¥0.00</div>
-                <div class="data-item" id="work-text">工作支出：¥0.00（占比：0.0%）</div>
-                <div class="data-item" id="traffic-text">交通支出：¥0.00（占比：0.0%）</div>
-                <div class="data-item" id="entertainment-text">吃喝玩乐支出：¥0.00（占比：0.0%）</div>
-            </div>
-
-            <!-- 4. 月度支出占比可视化 -->
-            <div class="section">
-                <div class="section-title">月度支出占比</div>
-                <button onclick="drawMonthChart()">查看月度占比图</button>
-                <div id="chart-container">
-                    <canvas id="cost-chart"></canvas>
-                </div>
-                <div class="tip">提示：无支出时无法显示占比图</div>
-            </div>
+        <!-- 1. 月份选择区域 -->
+        <div class="form-group">
+            <div class="section-title">选择记账月份</div>
+            <select id="month-select">
+                <option value="1">1月</option>
+                <option value="2">2月</option>
+                <option value="3">3月</option>
+                <option value="4">4月</option>
+                <option value="5">5月</option>
+                <option value="6">6月</option>
+                <option value="7">7月</option>
+                <option value="8">8月</option>
+                <option value="9">9月</option>
+                <option value="10">10月</option>
+                <option value="11">11月</option>
+                <option value="12">12月</option>
+            </select>
         </div>
 
-        <!-- 年度账单区域（默认隐藏） -->
-        <div id="year-area" class="content-area">
-            <!-- 年度账单汇总 -->
-            <div class="section">
-                <div class="section-title">年度收支汇总</div>
-                <button class="year-btn" onclick="loadAndShowYearData()">加载年度账单</button>
-                <div class="data-item" id="year-income-text">全年总收入：¥0.00</div>
-                <div class="data-item" id="year-total-cost-text">全年总支出：¥0.00</div>
-                <div class="data-item balance-text" id="year-balance-text">全年总结余：¥0.00</div>
-                <div class="data-item" id="year-work-text">全年工作支出：¥0.00（占比：0.0%）</div>
-                <div class="data-item" id="year-traffic-text">全年交通支出：¥0.00（占比：0.0%）</div>
-                <div class="data-item" id="year-entertainment-text">全年吃喝玩乐支出：¥0.00（占比：0.0%）</div>
-            </div>
-            
-            <!-- 年度支出占比图 -->
-            <div class="section">
-                <div class="section-title">年度支出占比</div>
-                <button class="year-btn" onclick="drawYearChart()">查看年度占比图</button>
-                <div id="year-chart-container">
-                    <canvas id="year-cost-chart"></canvas>
+        <!-- 2. 逐笔收支录入区域 -->
+        <div class="form-group">
+            <div class="section-title">记录收支</div>
+            <select id="record-type">
+                <option value="">请选择记录类型</option>
+                <option value="income">收入</option>
+                <option value="work">工作支出</option>
+                <option value="traffic">交通支出</option>
+                <option value="entertainment">吃喝玩乐支出</option>
+            </select>
+            <input type="number" id="amount-input" placeholder="输入本次金额（元）" step="0.01" min="0">
+            <button class="btn btn-primary" onclick="addRecord()">添加记录</button>
+            <button class="btn btn-danger" onclick="resetMonthData()">清空当月数据</button>
+        </div>
+
+        <!-- 3. 月度数据展示区域 -->
+        <div class="form-group">
+            <div class="section-title">当月收支明细</div>
+            <div class="data-card">
+                <div class="data-item">
+                    <span class="data-label">当月收入</span>
+                    <span class="data-value" id="income-text">¥0.00</span>
                 </div>
-                <div class="tip">提示：无年度支出时无法显示占比图</div>
+                <div class="data-item">
+                    <span class="data-label">当月总支出</span>
+                    <span class="data-value" id="total-cost-text">¥0.00</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">当月结余</span>
+                    <span class="data-value balance-value" id="month-balance-text">¥0.00</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">工作支出</span>
+                    <span class="data-value" id="work-text">¥0.00（0.0%）</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">交通支出</span>
+                    <span class="data-value" id="traffic-text">¥0.00（0.0%）</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">吃喝玩乐支出</span>
+                    <span class="data-value" id="entertainment-text">¥0.00（0.0%）</span>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 全局变量：存储年度数据
-        let yearData = {};
-
         // 初始化本地存储数据
         function initData() {
             const accountData = localStorage.getItem('accountBook');
             if (!accountData) {
-                // 初始数据：1-12月，每个月默认收支为0
                 const initialData = {};
                 for (let i = 1; i <= 12; i++) {
                     initialData[i] = {
@@ -247,309 +261,142 @@
             }
         }
 
-        // 新增：切换账单标签页
-        function switchTab(tabType) {
-            // 切换按钮样式
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            tabBtns.forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-
-            // 切换内容区域
-            const monthArea = document.getElementById('month-area');
-            const yearArea = document.getElementById('year-area');
-            
-            if (tabType === 'month') {
-                monthArea.classList.add('active');
-                yearArea.classList.remove('active');
-            } else if (tabType === 'year') {
-                monthArea.classList.remove('active');
-                yearArea.classList.add('active');
+        // 播放成功提示音效（封装兼容逻辑）
+        function playSuccessSound() {
+            try {
+                const sound = document.getElementById('success-sound');
+                // 重置播放位置（避免重复点击时音效不播放）
+                sound.currentTime = 0;
+                // 播放音效
+                sound.play();
+            } catch (e) {
+                // 音效播放失败不影响主功能，仅打印日志
+                console.log('音效播放失败:', e);
             }
         }
 
-        // 自动选中当前月份
-        function setCurrentMonth() {
+        // 格式化当前时间（高级时间展示）
+        function formatCurrentTime() {
             const now = new Date();
-            const currentMonth = now.getMonth() + 1; // 月份从0开始，+1转为1-12
+            // 年份
+            const year = now.getFullYear();
+            // 月份（补0）
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            // 日期（补0）
+            const day = now.getDate().toString().padStart(2, '0');
+            // 星期
+            const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const weekDay = weekDays[now.getDay()];
+            // 当前月份文字
+            const currentMonthText = `${now.getMonth() + 1}月`;
+
+            // 更新页面时间展示
+            document.getElementById('current-date').textContent = `${year}年${month}月${day}日 ${weekDay}`;
+            document.getElementById('current-month-text').textContent = currentMonthText;
+
+            // 自动选中当前月份
+            const currentMonth = now.getMonth() + 1;
             document.getElementById('month-select').value = currentMonth;
-            // 自动加载当前月数据
             loadAndShowData(currentMonth);
         }
 
         // 加载指定月份的数据并展示
         function loadAndShowData(month) {
-            if (!month) {
-                alert('请先选择月份！');
-                return;
+            if (!month) return;
+            try {
+                const accountData = JSON.parse(localStorage.getItem('accountBook'));
+                const monthData = accountData[month];
+                
+                const income = parseFloat(monthData.income);
+                const work = parseFloat(monthData.work);
+                const traffic = parseFloat(monthData.traffic);
+                const entertainment = parseFloat(monthData.entertainment);
+                const totalCost = work + traffic + entertainment;
+                const monthBalance = income - totalCost;
+
+                // 计算占比（简化展示）
+                const workRatio = totalCost > 0 ? (work / totalCost * 100).toFixed(1) : 0;
+                const trafficRatio = totalCost > 0 ? (traffic / totalCost * 100).toFixed(1) : 0;
+                const entertainmentRatio = totalCost > 0 ? (entertainment / totalCost * 100).toFixed(1) : 0;
+
+                // 更新页面展示（精简格式）
+                document.getElementById('income-text').textContent = `¥${income.toFixed(2)}`;
+                document.getElementById('total-cost-text').textContent = `¥${totalCost.toFixed(2)}`;
+                document.getElementById('month-balance-text').textContent = `¥${monthBalance.toFixed(2)}`;
+                document.getElementById('work-text').textContent = `¥${work.toFixed(2)}（${workRatio}%）`;
+                document.getElementById('traffic-text').textContent = `¥${traffic.toFixed(2)}（${trafficRatio}%）`;
+                document.getElementById('entertainment-text').textContent = `¥${entertainment.toFixed(2)}（${entertainmentRatio}%）`;
+            } catch (e) {
+                console.log('加载数据异常:', e);
             }
-            // 读取本地存储数据
-            const accountData = JSON.parse(localStorage.getItem('accountBook'));
-            const monthData = accountData[month];
-            
-            // 计算总支出、月结余和占比
-            const income = parseFloat(monthData.income);
-            const work = parseFloat(monthData.work);
-            const traffic = parseFloat(monthData.traffic);
-            const entertainment = parseFloat(monthData.entertainment);
-            const totalCost = work + traffic + entertainment;
-            const monthBalance = income - totalCost; // 月结余
-
-            // 计算占比（避免除以0）
-            const workRatio = totalCost > 0 ? (work / totalCost * 100).toFixed(1) : 0;
-            const trafficRatio = totalCost > 0 ? (traffic / totalCost * 100).toFixed(1) : 0;
-            const entertainmentRatio = totalCost > 0 ? (entertainment / totalCost * 100).toFixed(1) : 0;
-
-            // 更新页面展示
-            document.getElementById('income-text').textContent = `当月收入：¥${income.toFixed(2)}`;
-            document.getElementById('total-cost-text').textContent = `当月总支出：¥${totalCost.toFixed(2)}`;
-            document.getElementById('month-balance-text').textContent = `当月结余：¥${monthBalance.toFixed(2)}`;
-            document.getElementById('work-text').textContent = `工作支出：¥${work.toFixed(2)}（占比：${workRatio}%）`;
-            document.getElementById('traffic-text').textContent = `交通支出：¥${traffic.toFixed(2)}（占比：${trafficRatio}%）`;
-            document.getElementById('entertainment-text').textContent = `吃喝玩乐支出：¥${entertainment.toFixed(2)}（占比：${entertainmentRatio}%）`;
-
-            // 保存当前月份数据供绘图使用
-            window.currentMonthData = {
-                work,
-                traffic,
-                entertainment,
-                totalCost,
-                month
-            };
         }
 
-        // 加载年度数据并展示
-        function loadAndShowYearData() {
-            const accountData = JSON.parse(localStorage.getItem('accountBook'));
-            
-            // 初始化年度汇总数据
-            let yearIncome = 0.0;
-            let yearWork = 0.0;
-            let yearTraffic = 0.0;
-            let yearEntertainment = 0.0;
-
-            // 遍历12个月累加数据
-            for (let i = 1; i <= 12; i++) {
-                const monthData = accountData[i];
-                yearIncome += parseFloat(monthData.income);
-                yearWork += parseFloat(monthData.work);
-                yearTraffic += parseFloat(monthData.traffic);
-                yearEntertainment += parseFloat(monthData.entertainment);
-            }
-
-            // 计算年度总支出和总结余
-            const yearTotalCost = yearWork + yearTraffic + yearEntertainment;
-            const yearBalance = yearIncome - yearTotalCost;
-
-            // 计算年度支出占比
-            const yearWorkRatio = yearTotalCost > 0 ? (yearWork / yearTotalCost * 100).toFixed(1) : 0;
-            const yearTrafficRatio = yearTotalCost > 0 ? (yearTraffic / yearTotalCost * 100).toFixed(1) : 0;
-            const yearEntertainmentRatio = yearTotalCost > 0 ? (yearEntertainment / yearTotalCost * 100).toFixed(1) : 0;
-
-            // 更新年度数据展示
-            document.getElementById('year-income-text').textContent = `全年总收入：¥${yearIncome.toFixed(2)}`;
-            document.getElementById('year-total-cost-text').textContent = `全年总支出：¥${yearTotalCost.toFixed(2)}`;
-            document.getElementById('year-balance-text').textContent = `全年总结余：¥${yearBalance.toFixed(2)}`;
-            document.getElementById('year-work-text').textContent = `全年工作支出：¥${yearWork.toFixed(2)}（占比：${yearWorkRatio}%）`;
-            document.getElementById('year-traffic-text').textContent = `全年交通支出：¥${yearTraffic.toFixed(2)}（占比：${yearTrafficRatio}%）`;
-            document.getElementById('year-entertainment-text').textContent = `全年吃喝玩乐支出：¥${yearEntertainment.toFixed(2)}（占比：${yearEntertainmentRatio}%）`;
-
-            // 保存年度数据供绘图使用
-            yearData = {
-                work: yearWork,
-                traffic: yearTraffic,
-                entertainment: yearEntertainment,
-                totalCost: yearTotalCost
-            };
-        }
-
-        // 逐笔添加记录
+        // 逐笔添加记录（添加成功音效，失败无变化）
         function addRecord() {
             const month = document.getElementById('month-select').value;
             const recordType = document.getElementById('record-type').value;
             const amount = parseFloat(document.getElementById('amount-input').value || 0);
 
-            // 校验必填项
-            if (!month) {
-                alert('请先选择月份！');
-                return;
-            }
-            if (!recordType) {
-                alert('请选择记录类型（收入/支出类别）！');
-                return;
-            }
-            if (isNaN(amount) || amount <= 0) {
-                alert('请输入有效的正数金额！');
+            // 校验不通过则直接返回，无任何提示/音效
+            if (!month || !recordType || isNaN(amount) || amount <= 0) {
                 return;
             }
 
-            // 读取现有数据并累加
-            const accountData = JSON.parse(localStorage.getItem('accountBook'));
-            accountData[month][recordType] += amount;
-            localStorage.setItem('accountBook', JSON.stringify(accountData));
+            try {
+                const accountData = JSON.parse(localStorage.getItem('accountBook'));
+                accountData[month][recordType] += amount;
+                localStorage.setItem('accountBook', JSON.stringify(accountData));
 
-            // 清空金额输入框，方便下次录入
-            document.getElementById('amount-input').value = '';
-            // 刷新展示数据
-            loadAndShowData(month);
-            alert(`成功添加：${recordType === 'income' ? '收入' : recordType + '支出'} ¥${amount.toFixed(2)}`);
+                // 清空输入框，聚焦类型选择框
+                document.getElementById('amount-input').value = '';
+                document.getElementById('record-type').focus();
+                
+                // 播放成功音效
+                playSuccessSound();
+
+                // 成功则更新数据展示
+                loadAndShowData(month);
+            } catch (e) {
+                // 失败则无任何操作，仅打印日志（无音效、无界面变化）
+                console.log('添加记录异常:', e);
+            }
         }
 
-        // 清空当月数据
+        // 清空当月数据（移除所有弹窗提示）
         function resetMonthData() {
             const month = document.getElementById('month-select').value;
             if (!month) {
-                alert('请先选择月份！');
-                return;
-            }
-            if (!confirm(`确定要清空${month}月的所有收支数据吗？`)) {
                 return;
             }
 
-            const accountData = JSON.parse(localStorage.getItem('accountBook'));
-            accountData[month] = {
-                income: 0.0,
-                work: 0.0,
-                traffic: 0.0,
-                entertainment: 0.0
-            };
-            localStorage.setItem('accountBook', JSON.stringify(accountData));
-            loadAndShowData(month);
-            alert(`${month}月数据已清空！`);
+            try {
+                const accountData = JSON.parse(localStorage.getItem('accountBook'));
+                accountData[month] = {
+                    income: 0.0,
+                    work: 0.0,
+                    traffic: 0.0,
+                    entertainment: 0.0
+                };
+                localStorage.setItem('accountBook', JSON.stringify(accountData));
+                // 成功则更新数据展示（清空无音效）
+                loadAndShowData(month);
+            } catch (e) {
+                // 失败则无任何操作，仅打印日志
+                console.log('清空数据异常:', e);
+            }
         }
 
-        // 绘制月度支出占比饼图
-        function drawMonthChart() {
-            if (!window.currentMonthData) {
-                alert('请先选择月份并加载数据！');
-                return;
-            }
-            const { work, traffic, entertainment, totalCost, month } = window.currentMonthData;
-
-            if (totalCost <= 0) {
-                alert('当月无支出，无法绘制占比图！');
-                return;
-            }
-
-            // 获取画布上下文
-            const ctx = document.getElementById('cost-chart').getContext('2d');
-            // 销毁已有图表
-            if (window.costChart) {
-                window.costChart.destroy();
-            }
-
-            // 创建饼图
-            window.costChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['工作', '交通', '吃喝玩乐'],
-                    datasets: [{
-                        label: '支出占比',
-                        data: [work, traffic, entertainment],
-                        backgroundColor: [
-                            '#ff9999', // 粉色
-                            '#66b3ff', // 蓝色
-                            '#99ff99'  // 绿色
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `${month}月支出占比`,
-                            font: { size: 16 }
-                        },
-                        legend: {
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.raw;
-                                    const percentage = ((value / totalCost) * 100).toFixed(1);
-                                    return `${context.label}：¥${value.toFixed(2)}（${percentage}%）`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // 绘制年度支出占比饼图
-        function drawYearChart() {
-            if (Object.keys(yearData).length === 0) {
-                alert('请先加载年度账单！');
-                return;
-            }
-            const { work, traffic, entertainment, totalCost } = yearData;
-
-            if (totalCost <= 0) {
-                alert('全年无支出，无法绘制占比图！');
-                return;
-            }
-
-            // 获取画布上下文
-            const ctx = document.getElementById('year-cost-chart').getContext('2d');
-            // 销毁已有图表
-            if (window.yearCostChart) {
-                window.yearCostChart.destroy();
-            }
-
-            // 创建饼图
-            window.yearCostChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['工作', '交通', '吃喝玩乐'],
-                    datasets: [{
-                        label: '年度支出占比',
-                        data: [work, traffic, entertainment],
-                        backgroundColor: [
-                            '#ff6666', // 深粉色
-                            '#3399ff', // 深蓝色
-                            '#66cc66'  // 深绿色
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: '全年支出占比',
-                            font: { size: 16 }
-                        },
-                        legend: {
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.raw;
-                                    const percentage = ((value / totalCost) * 100).toFixed(1);
-                                    return `${context.label}：¥${value.toFixed(2)}（${percentage}%）`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // 页面加载完成后初始化
-        window.onload = function() {
+        // 页面加载初始化（优化执行顺序）
+        document.addEventListener('DOMContentLoaded', function() {
             initData();
-            setCurrentMonth(); // 自动选中当前月份并加载数据
+            formatCurrentTime(); // 自动识别并展示当前时间
             // 监听月份选择事件
             document.getElementById('month-select').addEventListener('change', function() {
+                // 切换月份时更新顶部文字
+                document.getElementById('current-month-text').textContent = `${this.value}月`;
                 loadAndShowData(this.value);
             });
-        };
+        });
     </script>
 </body>
 </html>
