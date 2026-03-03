@@ -1,11 +1,621 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>极简记账本（安卓版）</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- 引入Chart.js用于图表展示 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 自定义配置（黄色主题） -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#f59e0b', // 主色：黄色（amber-500）
+                        income: '#10b981',   // 收入绿色
+                        expense: '#ef4444',  // 支出红色
+                        profit: '#10b981',   // 盈利绿色
+                        loss: '#ef4444',     // 亏损红色
+                        card: '#ffffff',     // 卡片白色
+                        bg: '#faf6ed',       // 浅黄背景
+                        text: '#333333',     // 文字深灰
+                    },
+                    fontFamily: {
+                        sans: ['sans-serif', 'Microsoft YaHei'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .card-shadow {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            }
+            .btn-hover {
+                transition: background-color 0.2s ease;
+            }
+            .card-click {
+                transition: transform 0.1s ease, box-shadow 0.2s ease;
+            }
+            .card-click:active {
+                transform: scale(0.98);
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            }
+            /* 安卓适配：增大触摸区域 */
+            .touchable {
+                min-height: 44px;
+                min-width: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            /* 弹窗遮罩 */
+            .modal-overlay {
+                background: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(2px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-bg min-h-screen p-4 font-sans text-text">
+    <div class="max-w-lg mx-auto">
+        <!-- 标题 -->
+        <h1 class="text-[clamp(1.5rem,5vw,2rem)] font-bold text-primary mb-6 text-center">极简记账本</h1>
+        
+        <!-- 输入区域（卡片） -->
+        <div class="bg-card rounded-lg p-5 card-shadow mb-5">
+            <div class="flex flex-col gap-4">
+                <!-- 交易类型 -->
+                <div class="flex items-center gap-3">
+                    <label class="font-medium text-sm md:text-base">交易类型：</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-1 cursor-pointer touchable">
+                            <input type="radio" name="type" value="收入" checked class="accent-primary" onchange="toggleExpenseType()">
+                            <span class="text-income text-sm md:text-base">收入</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer touchable">
+                            <input type="radio" name="type" value="支出" class="accent-primary" onchange="toggleExpenseType()">
+                            <span class="text-expense text-sm md:text-base">支出</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- 支出类型选择（默认隐藏） -->
+                <div id="expenseTypeContainer" class="flex items-center gap-3 hidden">
+                    <label class="font-medium text-sm md:text-base">支出类型：</label>
+                    <select id="expenseType" class="border border-gray-200 rounded px-3 py-2 flex-grow focus:outline-none focus:ring-2 focus:ring-primary/50 touchable">
+                        <option value="工作">工作</option>
+                        <option value="交通">交通</option>
+                        <option value="吃喝娱乐">吃喝娱乐</option>
+                    </select>
+                </div>
+                
+                <!-- 金额输入 -->
+                <div class="flex items-center gap-2">
+                    <label class="font-medium text-sm md:text-base">金额（元）：</label>
+                    <input type="number" step="0.01" min="0.01" id="amount" placeholder="请输入金额" 
+                           class="border border-gray-200 rounded px-3 py-2 flex-grow focus:outline-none focus:ring-2 focus:ring-primary/50 touchable">
+                </div>
+                
+                <!-- 添加按钮 -->
+                <button id="addBtn" class="bg-primary text-white px-6 py-3 rounded btn-hover hover:bg-primary/90 touchable font-medium">
+                    <i class="fa-solid fa-plus mr-1"></i> 添加记录
+                </button>
+            </div>
+        </div>
+        
+        <!-- 极简统计卡片区域（仅显示标题） -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <!-- 总收入统计卡片（仅标题） -->
+            <div id="totalStatsCard" class="bg-card rounded-lg p-5 card-shadow card-click cursor-pointer touchable flex flex-col items-center justify-center h-32">
+                <i class="fa-solid fa-wallet text-primary text-2xl mb-2"></i>
+                <h2 class="font-bold text-lg text-primary">总收入</h2>
+                <span class="text-xs text-gray-500 mt-1">点击查看详细统计</span>
+            </div>
+            
+            <!-- 本月收入统计卡片（仅标题） -->
+            <div id="monthlyStatsCard" class="bg-card rounded-lg p-5 card-shadow card-click cursor-pointer touchable flex flex-col items-center justify-center h-32">
+                <i class="fa-solid fa-calendar-month text-primary text-2xl mb-2"></i>
+                <h2 class="font-bold text-lg text-primary">本月收入</h2>
+                <span class="text-xs text-gray-500 mt-1">点击查看详细统计</span>
+            </div>
+        </div>
+        
+        <!-- 记账记录区域（主页面单独显示） -->
+        <div class="bg-card rounded-lg p-4 card-shadow mb-5">
+            <h2 class="font-bold text-base mb-3 flex items-center">
+                <i class="fa-solid fa-list text-primary mr-1"></i>
+                记账记录 <span class="text-xs text-gray-500 ml-1">(最新在前)</span>
+            </h2>
+            <div class="overflow-auto max-h-[400px]">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="py-2 px-2 text-left text-xs">类型</th>
+                            <th class="py-2 px-2 text-left text-xs">金额</th>
+                            <th class="py-2 px-2 text-left text-xs">分类</th>
+                            <th class="py-2 px-2 text-left text-xs">时间</th>
+                            <th class="py-2 px-2 text-left text-xs">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordList">
+                        <tr class="text-center text-gray-500">
+                            <td colspan="5" class="py-6 text-xs">暂无记录，添加第一条吧～</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 总收入统计详情弹窗（完整数据+图表） -->
+    <div id="totalStatsModal" class="fixed inset-0 flex items-center justify-center z-50 hidden modal-overlay">
+        <div class="bg-card rounded-lg p-5 w-[90%] max-w-lg card-shadow">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-primary">总收入详细统计</h3>
+                <button onclick="closeModal('totalStatsModal')" class="text-gray-500 hover:text-gray-700 touchable p-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <!-- 总收入统计数据 -->
+            <div class="flex flex-wrap gap-4 justify-around mb-5">
+                <div class="text-center">
+                    <span class="font-medium block text-sm mb-1">总收入</span>
+                    <span id="totalIncome" class="text-income font-bold text-lg">0.00 元</span>
+                </div>
+                <div class="text-center">
+                    <span class="font-medium block text-sm mb-1">总支出</span>
+                    <span id="totalExpense" class="text-expense font-bold text-lg">0.00 元</span>
+                </div>
+                <div class="text-center">
+                    <span class="font-medium block text-sm mb-1">累计余额</span>
+                    <span id="balance" class="text-primary font-bold text-lg">0.00 元</span>
+                </div>
+            </div>
+            
+            <!-- 总收支柱状图 -->
+            <div class="h-52 mb-5">
+                <canvas id="totalIncomeExpenseChart"></canvas>
+            </div>
+            
+            <!-- 总支出分类环形图 -->
+            <div class="h-52">
+                <h4 class="text-center font-medium mb-2">总支出分类占比</h4>
+                <canvas id="totalExpenseCategoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 本月收入统计详情弹窗（完整数据+图表） -->
+    <div id="monthlyStatsModal" class="fixed inset-0 flex items-center justify-center z-50 hidden modal-overlay">
+        <div class="bg-card rounded-lg p-5 w-[90%] max-w-lg card-shadow">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-primary">
+                    本月收入详细统计（<span id="modalCurrentMonth"></span>）
+                </h3>
+                <button onclick="closeModal('monthlyStatsModal')" class="text-gray-500 hover:text-gray-700 touchable p-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <!-- 本月收入统计数据 -->
+            <div class="flex flex-wrap gap-4 justify-around mb-5">
+                <div class="text-center">
+                    <span class="font-medium block text-sm mb-1">本月收入</span>
+                    <span id="monthlyIncome" class="text-income font-bold text-lg">0.00 元</span>
+                </div>
+                <div class="text-center">
+                    <span class="font-medium block text-sm mb-1">本月支出</span>
+                    <span id="monthlyExpense" class="text-expense font-bold text-lg">0.00 元</span>
+                </div>
+                <div class="text-center">
+                    <span class="font-medium block text-sm mb-1">本月差额</span>
+                    <span id="monthlyBalance" class="font-bold text-lg">0.00 元</span>
+                    <span id="monthlyStatus" class="block text-xs mt-1"></span>
+                </div>
+            </div>
+            
+            <!-- 月度收支柱状图 -->
+            <div class="h-52 mb-5">
+                <canvas id="monthlyIncomeExpenseChart"></canvas>
+            </div>
+            
+            <!-- 月度支出分类环形图 -->
+            <div class="h-52">
+                <h4 class="text-center font-medium mb-2">本月支出分类占比</h4>
+                <canvas id="monthlyExpenseCategoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示框（安卓适配） -->
+    <div id="toast" class="fixed top-1/4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 z-50 text-center"></div>
+
+    <script>
+        // 数据存储键名
+        const STORAGE_KEY = 'android_account_book_records';
+        
+        // 初始化记录
+        let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        // 获取当前年月（格式：YYYY-MM）
+        const currentDate = new Date();
+        const currentYearMonth = `${currentDate.getFullYear()}-${(currentDate.getMonth()+1).toString().padStart(2, '0')}`;
+        
+        // DOM元素
+        const amountInput = document.getElementById('amount');
+        const addBtn = document.getElementById('addBtn');
+        const recordList = document.getElementById('recordList');
+        const toast = document.getElementById('toast');
+        const expenseTypeContainer = document.getElementById('expenseTypeContainer');
+        const expenseTypeSelect = document.getElementById('expenseType');
+        
+        // 统计数据DOM（移到弹窗内）
+        const totalIncomeEl = document.getElementById('totalIncome');
+        const totalExpenseEl = document.getElementById('totalExpense');
+        const balanceEl = document.getElementById('balance');
+        const monthlyIncomeEl = document.getElementById('monthlyIncome');
+        const monthlyExpenseEl = document.getElementById('monthlyExpense');
+        const monthlyBalanceEl = document.getElementById('monthlyBalance');
+        const monthlyStatusEl = document.getElementById('monthlyStatus');
+        const modalCurrentMonthEl = document.getElementById('modalCurrentMonth');
+        
+        // 图表实例
+        let totalIncomeExpenseChart = null;
+        let totalExpenseCategoryChart = null;
+        let monthlyIncomeExpenseChart = null;
+        let monthlyExpenseCategoryChart = null;
+        
+        // 初始化页面
+        toggleExpenseType();
+        modalCurrentMonthEl.textContent = currentYearMonth;
+        updateRecordList();
+        updateStats(); // 初始化统计数据（供弹窗使用）
+        updateMonthlyStats(); // 初始化月度数据（供弹窗使用）
+        
+        // 绑定事件
+        addBtn.addEventListener('click', addRecord);
+        document.getElementById('totalStatsCard').addEventListener('click', () => openModal('totalStatsModal'));
+        document.getElementById('monthlyStatsCard').addEventListener('click', () => openModal('monthlyStatsModal'));
+        
+        // 回车添加记录（安卓键盘适配）
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.activeElement === amountInput) {
+                addRecord();
+            }
+        });
+        
+        /**
+         * 切换支出类型显示/隐藏
+         */
+        function toggleExpenseType() {
+            const isExpense = document.querySelector('input[name="type"]:checked').value === '支出';
+            expenseTypeContainer.classList.toggle('hidden', !isExpense);
+        }
+        
+        /**
+         * 添加新记录
+         */
+        function addRecord() {
+            // 获取输入值
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const amountStr = amountInput.value.trim();
+            const category = type === '收入' ? '收入' : expenseTypeSelect.value;
+            
+            // 验证金额
+            if (!amountStr) {
+                showToast('请输入金额！', 'warning');
+                return;
+            }
+            
+            const amount = parseFloat(amountStr);
+            if (isNaN(amount) || amount <= 0) {
+                showToast('请输入有效的正数金额！', 'warning');
+                return;
+            }
+            
+            // 生成记录对象
+            const now = new Date();
+            const time = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const newRecord = {
+                id: Date.now(),
+                type,
+                category,
+                amount: parseFloat(amount.toFixed(2)),
+                time
+            };
+            
+            // 添加记录并保存
+            records.unshift(newRecord);
+            saveRecords();
+            
+            // 更新界面
+            updateRecordList();
+            updateStats();
+            updateMonthlyStats();
+            
+            // 清空输入框
+            amountInput.value = '';
+            amountInput.focus();
+            
+            // 提示成功
+            showToast('记录添加成功！', 'success');
+        }
+        
+        /**
+         * 保存记录到localStorage
+         */
+        function saveRecords() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        }
+        
+        /**
+         * 更新记录列表
+         */
+        function updateRecordList() {
+            if (records.length === 0) {
+                recordList.innerHTML = '<tr class="text-center text-gray-500"><td colspan="5" class="py-6 text-xs">暂无记录，添加第一条吧～</td></tr>';
+                return;
+            }
+            
+            // 生成记录行
+            let html = '';
+            records.forEach(record => {
+                const typeColor = record.type === '收入' ? 'text-income' : 'text-expense';
+                html += `
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="py-2 px-2 ${typeColor} font-medium text-xs">${record.type}</td>
+                        <td class="py-2 px-2 text-xs">${record.amount.toFixed(2)}</td>
+                        <td class="py-2 px-2 text-xs">${record.category}</td>
+                        <td class="py-2 px-2 text-gray-600 text-xs">${record.time}</td>
+                        <td class="py-2 px-2">
+                            <button onclick="deleteRecord(${record.id})" class="text-red-500 hover:text-red-700 touchable p-1">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            recordList.innerHTML = html;
+        }
+        
+        /**
+         * 更新总统计数据（供弹窗使用）
+         */
+        function updateStats() {
+            const totalIncome = records.filter(r => r.type === '收入').reduce((sum, r) => sum + r.amount, 0);
+            const totalExpense = records.filter(r => r.type === '支出').reduce((sum, r) => sum + r.amount, 0);
+            const balance = totalIncome - totalExpense;
+            
+            // 更新弹窗内的总统计显示
+            totalIncomeEl.textContent = `${totalIncome.toFixed(2)} 元`;
+            totalExpenseEl.textContent = `${totalExpense.toFixed(2)} 元`;
+            balanceEl.textContent = `${balance.toFixed(2)} 元`;
+        }
+        
+        /**
+         * 计算并更新月度统计数据（供弹窗使用）
+         */
+        function updateMonthlyStats() {
+            const monthlyRecords = records.filter(r => r.time.substring(0, 7) === currentYearMonth);
+            
+            const monthlyIncome = monthlyRecords.filter(r => r.type === '收入').reduce((sum, r) => sum + r.amount, 0);
+            const monthlyExpense = monthlyRecords.filter(r => r.type === '支出').reduce((sum, r) => sum + r.amount, 0);
+            const monthlyBalance = monthlyIncome - monthlyExpense;
+            
+            // 更新弹窗内的月度统计显示
+            monthlyIncomeEl.textContent = `${monthlyIncome.toFixed(2)} 元`;
+            monthlyExpenseEl.textContent = `${monthlyExpense.toFixed(2)} 元`;
+            monthlyBalanceEl.textContent = `${monthlyBalance.toFixed(2)} 元`;
+            
+            // 根据差额设置颜色和状态提示
+            if (monthlyBalance > 0) {
+                monthlyBalanceEl.className = 'text-profit font-bold text-lg';
+                monthlyStatusEl.className = 'block text-xs mt-1 text-profit';
+                monthlyStatusEl.textContent = `盈余 ${monthlyBalance.toFixed(2)} 元`;
+            } else if (monthlyBalance < 0) {
+                monthlyBalanceEl.className = 'text-loss font-bold text-lg';
+                monthlyStatusEl.className = 'block text-xs mt-1 text-loss';
+                monthlyStatusEl.textContent = `超支 ${Math.abs(monthlyBalance).toFixed(2)} 元`;
+            } else {
+                monthlyBalanceEl.className = 'text-primary font-bold text-lg';
+                monthlyStatusEl.className = 'block text-xs mt-1 text-gray-500';
+                monthlyStatusEl.textContent = '收支平衡';
+            }
+        }
+        
+        /**
+         * 删除记录
+         */
+        function deleteRecord(id) {
+            if (confirm('确定要删除这条记录吗？')) {
+                records = records.filter(record => record.id !== id);
+                saveRecords();
+                updateRecordList();
+                updateStats();
+                updateMonthlyStats();
+                showToast('记录已删除', 'info');
+            }
+        }
+        
+        /**
+         * 打开统计弹窗并初始化图表
+         */
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            // 初始化对应图表
+            if (modalId === 'totalStatsModal') {
+                initTotalStatsCharts();
+            } else if (modalId === 'monthlyStatsModal') {
+                initMonthlyStatsCharts();
+            }
+        }
+        
+        /**
+         * 关闭统计弹窗
+         */
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+        
+        /**
+         * 初始化总统计图表
+         */
+        function initTotalStatsCharts() {
+            const totalIncome = records.filter(r => r.type === '收入').reduce((sum, r) => sum + r.amount, 0);
+            const totalExpense = records.filter(r => r.type === '支出').reduce((sum, r) => sum + r.amount, 0);
+            
+            // 销毁旧图表
+            if (totalIncomeExpenseChart) totalIncomeExpenseChart.destroy();
+            
+            // 总收支柱状图
+            const totalIncomeExpenseCtx = document.getElementById('totalIncomeExpenseChart').getContext('2d');
+            totalIncomeExpenseChart = new Chart(totalIncomeExpenseCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['总收入', '总支出'],
+                    datasets: [{
+                        label: '金额（元）',
+                        data: [totalIncome, totalExpense],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+                        x: { ticks: { font: { size: 12, weight: 'bold' } } }
+                    }
+                }
+            });
+            
+            // 总支出分类环形图
+            const totalExpenseRecords = records.filter(r => r.type === '支出');
+            const work = totalExpenseRecords.filter(r => r.category === '工作').reduce((sum, r) => sum + r.amount, 0);
+            const traffic = totalExpenseRecords.filter(r => r.category === '交通').reduce((sum, r) => sum + r.amount, 0);
+            const entertainment = totalExpenseRecords.filter(r => r.category === '吃喝娱乐').reduce((sum, r) => sum + r.amount, 0);
+            
+            if (totalExpenseCategoryChart) totalExpenseCategoryChart.destroy();
+            const totalExpenseCategoryCtx = document.getElementById('totalExpenseCategoryChart').getContext('2d');
+            totalExpenseCategoryChart = new Chart(totalExpenseCategoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['工作', '交通', '吃喝娱乐'],
+                    datasets: [{
+                        data: [work, traffic, entertainment],
+                        backgroundColor: ['#ef4444', '#3b82f6', '#f59e0b'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化月度统计图表
+         */
+        function initMonthlyStatsCharts() {
+            const monthlyRecords = records.filter(r => r.time.substring(0, 7) === currentYearMonth);
+            const monthlyIncome = monthlyRecords.filter(r => r.type === '收入').reduce((sum, r) => sum + r.amount, 0);
+            const monthlyExpense = monthlyRecords.filter(r => r.type === '支出').reduce((sum, r) => sum + r.amount, 0);
+            
+            // 月度收支柱状图
+            if (monthlyIncomeExpenseChart) monthlyIncomeExpenseChart.destroy();
+            const monthlyIncomeExpenseCtx = document.getElementById('monthlyIncomeExpenseChart').getContext('2d');
+            monthlyIncomeExpenseChart = new Chart(monthlyIncomeExpenseCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['本月收入', '本月支出'],
+                    datasets: [{
+                        data: [monthlyIncome, monthlyExpense],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+                        x: { ticks: { font: { size: 12, weight: 'bold' } } }
+                    }
+                }
+            });
+            
+            // 月度支出分类环形图
+            const monthlyExpenseRecords = monthlyRecords.filter(r => r.type === '支出');
+            const work = monthlyExpenseRecords.filter(r => r.category === '工作').reduce((sum, r) => sum + r.amount, 0);
+            const traffic = monthlyExpenseRecords.filter(r => r.category === '交通').reduce((sum, r) => sum + r.amount, 0);
+            const entertainment = monthlyExpenseRecords.filter(r => r.category === '吃喝娱乐').reduce((sum, r) => sum + r.amount, 0);
+            
+            if (monthlyExpenseCategoryChart) monthlyExpenseCategoryChart.destroy();
+            const monthlyExpenseCategoryCtx = document.getElementById('monthlyExpenseCategoryChart').getContext('2d');
+            monthlyExpenseCategoryChart = new Chart(monthlyExpenseCategoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['工作', '交通', '吃喝娱乐'],
+                    datasets: [{
+                        data: [work, traffic, entertainment],
+                        backgroundColor: ['#ef4444', '#3b82f6', '#f59e0b'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 显示提示框（安卓适配）
+         */
+        function showToast(message, type) {
+            const bgColors = {
+                success: 'bg-green-500',
+                warning: 'bg-amber-500',
+                info: 'bg-blue-500',
+                error: 'bg-red-500'
+            };
+            
+            toast.className = `fixed top-1/4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white ${bgColors[type]} opacity-100 transition-opacity duration-300 z-50 text-center`;
+            toast.textContent = message;
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
 </html>
