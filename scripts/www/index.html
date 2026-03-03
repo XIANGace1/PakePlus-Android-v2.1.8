@@ -1,11 +1,428 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>极简待办</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #F5F5F5;
+            padding: 20px 16px;
+            min-height: 100vh;
+        }
+        /* 日期栏 */
+        .date-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .date-btn {
+            width: 60px;
+            height: 32px;
+            border: none;
+            background: #FFFFFF;
+            border-radius: 16px;
+            font-size: 14px;
+            color: #333333;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .date-btn.active {
+            background: #4CAF50;
+            color: #FFFFFF;
+        }
+        .current-date {
+            font-size: 18px;
+            font-weight: bold;
+            color: #212121;
+        }
+        /* 待办列表 */
+        .todo-list {
+            margin-bottom: 80px;
+        }
+        .todo-item {
+            display: flex;
+            align-items: center;
+            background: #FFFFFF;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+        .todo-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #E0E0E0;
+            margin-right: 12px;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+        }
+        .todo-checkbox.checked {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+        .todo-text {
+            font-size: 16px;
+            color: #333333;
+            flex: 1;
+            word-break: break-all;
+        }
+        .todo-text.checked {
+            color: #9E9E9E;
+            text-decoration: line-through;
+        }
+        /* 添加按钮 */
+        .add-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 16px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #4CAF50;
+            color: #FFFFFF;
+            font-size: 32px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 输入弹窗 */
+        .modal-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal-box {
+            width: 90%;
+            max-width: 400px;
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #212121;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .todo-input {
+            width: 100%;
+            height: 80px;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 16px;
+            color: #333333;
+            resize: none;
+            margin-bottom: 20px;
+        }
+        .modal-btns {
+            display: flex;
+            justify-content: space-between;
+        }
+        .modal-btn {
+            width: 48%;
+            height: 40px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .cancel-btn {
+            background: #F5F5F5;
+            color: #666666;
+        }
+        .confirm-btn {
+            background: #4CAF50;
+            color: #FFFFFF;
+        }
+        /* 空状态 */
+        .empty-tip {
+            text-align: center;
+            color: #9E9E9E;
+            font-size: 14px;
+            margin-top: 40px;
+        }
+        /* 编辑删除菜单 */
+        .menu-box {
+            position: fixed;
+            background: #FFFFFF;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 90;
+        }
+        .menu-item {
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #333333;
+            cursor: pointer;
+        }
+        .menu-item.delete {
+            color: #F44336;
+        }
+    </style>
+</head>
+<body>
+    <!-- 日期栏 -->
+    <div class="date-bar">
+        <button class="date-btn" id="prevBtn">昨日</button>
+        <div class="current-date" id="currentDate"></div>
+        <button class="date-btn active" id="nextBtn">明日</button>
+    </div>
+
+    <!-- 待办列表 -->
+    <div class="todo-list" id="todoList"></div>
+
+    <!-- 添加按钮 -->
+    <button class="add-btn" id="addBtn">+</button>
+
+    <!-- 输入弹窗 -->
+    <div class="modal-mask" id="modalMask" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-title">添加待办</div>
+            <textarea class="todo-input" id="todoInput" placeholder="请输入待办内容（最多50字）" maxlength="50"></textarea>
+            <div class="modal-btns">
+                <button class="modal-btn cancel-btn" id="cancelBtn">取消</button>
+                <button class="modal-btn confirm-btn" id="confirmBtn">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 核心变量
+        let currentType = 'tomorrow'; // 默认选中明日：yesterday/today/tomorrow
+        let todoData = JSON.parse(localStorage.getItem('todoData')) || {
+            yesterday: [],
+            today: [],
+            tomorrow: []
+        };
+
+        // 初始化日期
+        function initDate() {
+            const now = new Date();
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            // 昨日/今日/明日日期
+            const yesterday = new Date(now);
+            yesterday.setDate(now.getDate() - 1);
+            const today = now;
+            const tomorrow = new Date(now);
+            tomorrow.setDate(now.getDate() + 1);
+            // 存储日期标识
+            window.dateMap = {
+                yesterday: formatDate(yesterday),
+                today: formatDate(today),
+                tomorrow: formatDate(tomorrow)
+            };
+            // 更新页面日期显示
+            document.getElementById('currentDate').textContent = dateMap[currentType];
+            // 每日自动迁移：明日待办 → 今日待办
+            if (todoData.tomorrow.length > 0) {
+                todoData.today = [...todoData.today, ...todoData.tomorrow];
+                todoData.tomorrow = [];
+                saveData();
+            }
+        }
+
+        // 保存数据到本地
+        function saveData() {
+            localStorage.setItem('todoData', JSON.stringify(todoData));
+        }
+
+        // 渲染待办列表
+        function renderTodoList() {
+            const todoList = document.getElementById('todoList');
+            const list = todoData[currentType];
+            // 清空列表
+            todoList.innerHTML = '';
+            // 空状态
+            if (list.length === 0) {
+                todoList.innerHTML = '<div class="empty-tip">暂无待办，点击底部+添加</div>';
+                return;
+            }
+            // 渲染每一项
+            list.forEach((item, index) => {
+                const todoItem = document.createElement('div');
+                todoItem.className = 'todo-item';
+                todoItem.dataset.index = index;
+                todoItem.innerHTML = `
+                    <div class="todo-checkbox ${item.checked ? 'checked' : ''}" id="checkbox_${index}">
+                        ${item.checked ? '✓' : ''}
+                    </div>
+                    <div class="todo-text ${item.checked ? 'checked' : ''}">${item.content}</div>
+                `;
+                todoList.appendChild(todoItem);
+                // 勾选事件
+                const checkbox = document.getElementById(`checkbox_${index}`);
+                checkbox.addEventListener('click', () => {
+                    list[index].checked = !list[index].checked;
+                    saveData();
+                    renderTodoList();
+                });
+                // 长按编辑/删除
+                let pressTimer = null;
+                todoItem.addEventListener('touchstart', (e) => {
+                    pressTimer = setTimeout(() => {
+                        showMenu(e, index);
+                    }, 500);
+                });
+                todoItem.addEventListener('touchend', () => {
+                    clearTimeout(pressTimer);
+                });
+            });
+        }
+
+        // 显示编辑/删除菜单
+        function showMenu(e, index) {
+            // 移除原有菜单
+            const oldMenu = document.querySelector('.menu-box');
+            if (oldMenu) oldMenu.remove();
+            // 创建菜单
+            const menuBox = document.createElement('div');
+            menuBox.className = 'menu-box';
+            menuBox.style.left = `${e.touches[0].clientX}px`;
+            menuBox.style.top = `${e.touches[0].clientY}px`;
+            menuBox.innerHTML = `
+                <div class="menu-item" id="editMenu_${index}">编辑</div>
+                <div class="menu-item delete" id="deleteMenu_${index}">删除</div>
+            `;
+            document.body.appendChild(menuBox);
+            // 编辑事件
+            document.getElementById(`editMenu_${index}`).addEventListener('click', () => {
+                const content = todoData[currentType][index].content;
+                document.getElementById('todoInput').value = content;
+                showModal(true, index);
+                menuBox.remove();
+            });
+            // 删除事件
+            document.getElementById(`deleteMenu_${index}`).addEventListener('click', () => {
+                todoData[currentType].splice(index, 1);
+                saveData();
+                renderTodoList();
+                menuBox.remove();
+            });
+            // 点击空白处关闭菜单
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.menu-box')) menuBox.remove();
+            });
+        }
+
+        // 显示/隐藏输入弹窗
+        function showModal(isEdit = false, editIndex = -1) {
+            const modalMask = document.getElementById('modalMask');
+            modalMask.style.display = 'flex';
+            const todoInput = document.getElementById('todoInput');
+            // 编辑/添加区分
+            window.isEditMode = isEdit;
+            window.editIndex = editIndex;
+            if (isEdit) {
+                document.querySelector('.modal-title').textContent = '编辑待办';
+            } else {
+                document.querySelector('.modal-title').textContent = '添加待办';
+                todoInput.value = '';
+            }
+            todoInput.focus();
+        }
+
+        // 隐藏弹窗
+        function hideModal() {
+            document.getElementById('modalMask').style.display = 'none';
+        }
+
+        // 添加/编辑待办
+        function handleTodoSubmit() {
+            const content = document.getElementById('todoInput').value.trim();
+            if (!content) return;
+            if (window.isEditMode) {
+                // 编辑
+                todoData[currentType][window.editIndex].content = content;
+            } else {
+                // 添加
+                todoData[currentType].push({
+                    content,
+                    checked: false
+                });
+            }
+            saveData();
+            hideModal();
+            renderTodoList();
+        }
+
+        // 日期切换事件
+        function initDateBtn() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const btns = [prevBtn, nextBtn];
+            // 昨日切换
+            prevBtn.addEventListener('click', () => {
+                currentType = 'yesterday';
+                updateDateBtnStatus();
+                renderTodoList();
+            });
+            // 明日切换
+            nextBtn.addEventListener('click', () => {
+                currentType = 'tomorrow';
+                updateDateBtnStatus();
+                renderTodoList();
+            });
+            // 更新按钮激活状态
+            function updateDateBtnStatus() {
+                btns.forEach(btn => btn.classList.remove('active'));
+                if (currentType === 'yesterday') prevBtn.classList.add('active');
+                if (currentType === 'tomorrow') nextBtn.classList.add('active');
+                document.getElementById('currentDate').textContent = dateMap[currentType];
+            }
+        }
+
+        // 初始化所有功能
+        function init() {
+            initDate();
+            initDateBtn();
+            renderTodoList();
+            // 添加按钮点击
+            document.getElementById('addBtn').addEventListener('click', () => showModal());
+            // 取消按钮
+            document.getElementById('cancelBtn').addEventListener('click', hideModal);
+            // 确认按钮
+            document.getElementById('confirmBtn').addEventListener('click', handleTodoSubmit);
+            // 回车键确认
+            document.getElementById('todoInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleTodoSubmit();
+                }
+            });
+        }
+
+        // 启动APP
+        init();
+    </script>
+</body>
 </html>
